@@ -1,0 +1,24 @@
+# Môi trường ảo Python
+venv/
+env/
+
+# Cache của Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# File cơ sở dữ liệu cục bộ
+*.db
+*.sqlite3
+database.db
+users.json
+
+# File chứa khóa (nếu có lưu ra file để test)
+*.pem
+*.key
+private_key.txt
+
+# Các file cấu hình hệ điều hành (Tùy chọn)
+.DS_Store
+Thumbs.db
