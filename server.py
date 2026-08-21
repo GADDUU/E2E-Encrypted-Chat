@@ -5,6 +5,21 @@ import threading
 HOST = 'localhost'
 PORT = 1106
 
+# List to keep track of all connected clients
+clients = []
+
+# Function to broadcast messages to all connected clients
+def broadcast_message(message, sender_conn):
+    for client in clients:
+        # Check condition to avoid sending the message back to the sender
+        if client != sender_conn:
+            try:
+                # Send the message to the client
+                client.sendall(message.encode('utf-8'))
+            except Exception as e:
+                print(f"Error sending message to client: {e}")
+                clients.remove(client) # Remove the client from the list if sending fails
+
 # Function to handle each client connection independently
 def handle_client(client_conn, client_address):
     print(f"New connection thread started for client: {client_address}")
@@ -24,6 +39,12 @@ def handle_client(client_conn, client_address):
             decoded_data = data.decode('utf-8')
             print(f"Received data from {client_address}: {decoded_data}")
 
+            # Format the message to show who sent it
+            message_to_send = f"Message from {client_address}: {decoded_data}"
+
+            # Call the broadcast function to send the message
+            broadcast_message(message_to_send, client_conn)
+
         except Exception as e:
             # Break the loop if an error occurs
             print(f"Error receiving data from client {client_address}: {e}")
@@ -33,13 +54,9 @@ def handle_client(client_conn, client_address):
     client_conn.close()
     print(f"Connection with {client_address} closed")
 
-# Initialize a TCP socket
+# Initialize the server socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-# Bind the socket to a specific address and port
 server_socket.bind((HOST, PORT))
-
-# Start listening for incoming connections
 server_socket.listen()
 print(f"Server is listening on port {PORT}")
 
@@ -47,6 +64,9 @@ print(f"Server is listening on port {PORT}")
 while True:
     # Accept a new client connection
     client_conn, client_address = server_socket.accept()
+
+    # Add the new client connection to the list of clients
+    clients.append(client_conn)
     print(f"Accepted new connection from {client_address}")
 
     # Create a new thread to handle the client connection
