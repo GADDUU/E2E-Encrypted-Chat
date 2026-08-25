@@ -1,7 +1,7 @@
 import socket
+import sys
 import threading
 
-# Define the host and port for the client
 HOST = 'localhost'
 PORT = 1106
 
@@ -9,40 +9,65 @@ PORT = 1106
 def receive_messages(client_socket):
     while True:
         try:
-            # Receive data from the server
             data = client_socket.recv(1010)
             if not data:
-                print("Server has closed the connection")
+                print("\nServer has closed the connection")
                 break
-            # Decode and print the received data from bytes to string
             decoded_data = data.decode('utf-8')
-            print(f"Received from server: {decoded_data}")
+            print(f"\nReceived from server: {decoded_data}")
         except Exception as e:
-            print(f"Error receiving data from server: {e}")
+            print(f"\nError receiving data from server: {e}")
             break
 
 # Initialize the TCP Socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
-print(f"Connected to the server at {HOST}:{PORT}")
+print(f"\nConnected to the server at {HOST}:{PORT}")
 
-# Start a separate thread to handle receiving messages from the server
-receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
-receive_thread.start()
+# ========================================
+# AUTH MENU
+# ========================================
+print("\n--- WELCOME TO E2E CHAT ---")
+print("1. Register")
+print("2. Login")
 
-# Keep the connection open to send data to the server
-while True:
-    # Get user input to send to the server
-    data_to_send = input("")
+choice = input("Enter your choice (1 or 2): ")
 
-    # Check if the user wants to exit
-    if data_to_send.lower() == 'exit':
-        print("Exiting the client")
-        break
+if choice == '1':
+    username = input("Enter a new username: ")
+    password = input("Enter a new password: ")
 
-    #Encode and send the data to the server
-    client_socket.sendall(data_to_send.encode('utf-8'))
-    print(f"Message sent to the server successfully: {data_to_send}")
+    auth_message = f"REGISTER|{username}|{password}"
+    client_socket.sendall(auth_message.encode('utf-8'))
 
-# Close the client socket
-client_socket.close()
+    response = client_socket.recv(1024).decode('utf-8')
+    print(f"Server response: {response}")
+
+    client_socket.close()
+    sys.exit()
+
+else:
+    print("Login functionality is not implemented yet. Exiting")
+    client_socket.close()
+    sys.exit()
+# ========================================
+
+
+
+# # Start a separate thread to handle receiving messages from the server
+# receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
+# receive_thread.start()
+
+# # Keep the connection open to send data to the server
+# while True:
+#     data_to_send = input("")
+
+#     if data_to_send.lower() == 'exit':
+#         print("Exiting the client")
+#         break
+
+#     client_socket.sendall(data_to_send.encode('utf-8'))
+#     print(f"Message sent to the server successfully: {data_to_send}")
+
+# # Close the client socket
+# client_socket.close()
