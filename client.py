@@ -46,8 +46,21 @@ if choice == '1':
     client_socket.close()
     sys.exit()
 
+elif choice == '2':
+    username = input("Enter your username: ")
+    password = input("Enter your password: ")
+
+    auth_message = f"LOGIN|{username}|{password}"
+    client_socket.sendall(auth_message.encode('utf-8'))
+
+    response = client_socket.recv(1024).decode('utf-8')
+    print(f"Server response: {response}")
+
+    client_socket.close()
+    sys.exit()
+
 else:
-    print("Login functionality is not implemented yet. Exiting")
+    print("Invalid choice. Existing the client")
     client_socket.close()
     sys.exit()
 # ========================================

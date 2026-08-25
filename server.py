@@ -35,6 +35,7 @@ def handle_client(client_conn, client_address):
 
             parts = decoded_data.split('|')
 
+            # Handle registration and login requests
             if parts[0] == "REGISTER":
                 username = parts[1]
                 password = parts[2]
@@ -55,6 +56,28 @@ def handle_client(client_conn, client_address):
                 client_conn.sendall(response.encode('utf-8'))
 
                 continue  # Skip broadcasting the registration message to other clients
+
+            elif parts[0] == "LOGIN":
+                username = parts[1]
+                password = parts[2]
+
+                stored_hashed_password = database.get_user_password(username)
+                if stored_hashed_password is None:
+                    response = "Login failed: User does not exist"
+                    print(f"Login failed for user {username}: User does not exist")
+                else:
+                    password_bytes = password.encode('utf-8')
+                    if bcrypt.checkpw(password_bytes, stored_hashed_password):
+                        response = "Login successful"
+                        print(f"User {username} logged in successfully")
+                    else:
+                        response = "Login failed: Incorrect password"
+                        print(f"Login failed for user {username}: Incorrect password")
+
+                client_conn.sendall(response.encode('utf-8'))
+
+                continue  # Skip broadcasting the login message to other clients
+
 
             message_to_send = f"Message from {client_address}: {decoded_data}"
 
