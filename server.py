@@ -2,12 +2,14 @@ import socket
 import threading
 import bcrypt
 import database
+import secrets
 
 HOST = 'localhost'
 PORT = 1106
 
 # List to keep track of all connected clients
 clients = []
+active_sessions = {}
 
 # Function to broadcast messages to all connected clients
 def broadcast_message(message, sender_conn):
@@ -55,7 +57,7 @@ def handle_client(client_conn, client_address):
 
                 client_conn.sendall(response.encode('utf-8'))
 
-                continue  # Skip broadcasting the registration message to other clients
+                continue
 
             elif parts[0] == "LOGIN":
                 username = parts[1]
@@ -68,7 +70,9 @@ def handle_client(client_conn, client_address):
                 else:
                     password_bytes = password.encode('utf-8')
                     if bcrypt.checkpw(password_bytes, stored_hashed_password):
-                        response = "Login successful"
+                        session_id = secrets.token_hex(16)
+                        active_sessions[session_id] = username
+                        response = f"SUCCESS|{session_id}|Welcome {username}!"
                         print(f"User {username} logged in successfully")
                     else:
                         response = "Login failed: Incorrect password"
@@ -76,7 +80,7 @@ def handle_client(client_conn, client_address):
 
                 client_conn.sendall(response.encode('utf-8'))
 
-                continue  # Skip broadcasting the login message to other clients
+                continue
 
 
             message_to_send = f"Message from {client_address}: {decoded_data}"
@@ -86,6 +90,10 @@ def handle_client(client_conn, client_address):
         except Exception as e:
             print(f"Error receiving data from client {client_address}: {e}")
             break
+
+    # Remove the client from the list of connected clients when they disconnect
+    if client_conn in clients:
+        clients.remove(client_conn)
 
     client_conn.close()
     print(f"Connection with {client_address} closed")
@@ -107,6 +115,6 @@ while True:
 
     client_thread.start()
 
-    print(f"Active threads: {threading.active_count()}")
+    print(f"Active threads: {threading.active_count() - 1}")
     
 server_socket.close()
