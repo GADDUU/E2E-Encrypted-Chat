@@ -6,98 +6,87 @@ from Crypto.PublicKey import RSA
 HOST = 'localhost'
 PORT = 1106
 
-# Function to continuously receive messages from the server
 def receive_messages(client_socket):
     while True:
         try:
-            data = client_socket.recv(1010)
+            data = client_socket.recv(4096)
             if not data:
-                print("\n[CLIENT] Server has closed the connection")
+                print("\n[!] Connection closed by server.")
                 break
             decoded_data = data.decode('utf-8')
-            print(f"\n[CLIENT] Received from server: {decoded_data}")
+            print(f"\n{decoded_data}")
         except Exception as e:
-            print(f"\n[CLIENT] Error receiving data from server: {e}")
+            print(f"\n[!] Error receiving data: {e}")
             break
 
-# Function to generate RSA key pair for encryption
 def generate_rsa_key_pair():
     key = RSA.generate(2048)
     private_key = key.export_key()
-    public_key = key.public_key().export_key()
+    public_key = key.publickey().export_key()
     return private_key, public_key
 
-# Initialize the TCP Socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
-print(f"\n[CLIENT] Connected to the server at {HOST}:{PORT}")
+print(f"[-] Connected to server at {HOST}:{PORT}")
 
-# ========================================
-# AUTH MENU
-# ========================================
-print("\n[CLIENT] --- WELCOME TO E2E CHAT ---")
-print("[CLIENT] 1. Register")
-print("[CLIENT] 2. Login")
-
-choice = input("Enter your choice (1 or 2): ")
+print("\n--- WELCOME TO E2E CHAT ---")
+print("1. Register")
+print("2. Login")
+choice = input("[-] Enter your choice (1 or 2): ")
 
 if choice == '1':
-    username = input("Enter a new username: ")
-    password = input("Enter a new password: ")
-
+    username = input("[-] Enter a new username: ")
+    password = input("[-] Enter a new password: ")
     auth_message = f"REGISTER|{username}|{password}"
     client_socket.sendall(auth_message.encode('utf-8'))
-
     response = client_socket.recv(1024).decode('utf-8')
-    print(f"[CLIENT] Server response: {response}")
-
+    print(f"[-] Server: {response}")
     client_socket.close()
     sys.exit()
 
 elif choice == '2':
-    username = input("Enter your username: ")
-    password = input("Enter your password: ")
-
+    username = input("[-] Enter your username: ")
+    password = input("[-] Enter your password: ")
     auth_message = f"LOGIN|{username}|{password}"
     client_socket.sendall(auth_message.encode('utf-8'))
-
     response = client_socket.recv(1024).decode('utf-8')
-
     parts = response.split('|')
 
     if parts[0] == "SUCCESS":
         session_id = parts[1]
-        welcome_message = parts[2]
-
-        print(f"[CLIENT] Login successful: {welcome_message}")
-        print(f"[CLIENT] Session ID securely stored: {session_id}")
-
-        print("\n[CLIENT] Initializing RSA key pair for encryption...")
+        print(f"[+] Login successful: {parts[2]}")
+        print(f"[-] Session ID stored: {session_id}")
+        
+        print("[-] Initializing RSA key pair...")
         my_private_key, my_public_key = generate_rsa_key_pair()
-        print("[CLIENT] RSA key pair generated successfully")
-
+        
+        print("[-] Uploading public key to server...")
+        upload_key_message = f"UPLOAD_PUBLIC_KEY|{my_public_key.decode('utf-8')}"
+        client_socket.sendall(upload_key_message.encode('utf-8'))
+    else:
+        print(f"[!] Server: {response}")
+        client_socket.close()
+        sys.exit()
 else:
-    print("[CLIENT] Invalid choice. Exiting the client")
+    print("[!] Invalid choice.")
     client_socket.close()
     sys.exit()
-# ========================================
 
-
-
-# Start a separate thread to handle receiving messages from the server
+print("\n--- ENTERING SECURE CHAT ---")
 receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
 receive_thread.start()
 
-# Keep the connection open to send data to the server
+target_username = input("\n[-] Enter the username you want to chat with: ")
+key_request_message = f"REQUEST_PUBLIC_KEY|{target_username}"
+client_socket.sendall(key_request_message.encode('utf-8'))
+print(f"[-] Public key request sent for user: {target_username}")
+
 while True:
     data_to_send = input("")
-
     if data_to_send.lower() == 'exit':
-        print("[CLIENT] Exiting the client")
+        print("[-] Exiting...")
         break
-
     client_socket.sendall(data_to_send.encode('utf-8'))
-    print(f"[CLIENT] Message sent to the server successfully: {data_to_send}")
+    print(f"[+] Message sent: {data_to_send}")
 
-# Close the client socket
 client_socket.close()
