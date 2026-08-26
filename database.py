@@ -20,7 +20,7 @@ def initialize_database():
     conn.commit()
     conn.close()
 
-    print("Database initialized and 'users' table created successfully")
+    print("[DATABASE] Database initialized and 'users' table created successfully")
 
 # Function to add a new user to the database
 def add_user(username, password):

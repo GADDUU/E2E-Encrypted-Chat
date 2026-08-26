@@ -1,6 +1,7 @@
 import socket
 import sys
 import threading
+from Crypto.PublicKey import RSA
 
 HOST = 'localhost'
 PORT = 1106
@@ -11,25 +12,32 @@ def receive_messages(client_socket):
         try:
             data = client_socket.recv(1010)
             if not data:
-                print("\nServer has closed the connection")
+                print("\n[CLIENT] Server has closed the connection")
                 break
             decoded_data = data.decode('utf-8')
-            print(f"\nReceived from server: {decoded_data}")
+            print(f"\n[CLIENT] Received from server: {decoded_data}")
         except Exception as e:
-            print(f"\nError receiving data from server: {e}")
+            print(f"\n[CLIENT] Error receiving data from server: {e}")
             break
+
+# Function to generate RSA key pair for encryption
+def generate_rsa_key_pair():
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    public_key = key.public_key().export_key()
+    return private_key, public_key
 
 # Initialize the TCP Socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
-print(f"\nConnected to the server at {HOST}:{PORT}")
+print(f"\n[CLIENT] Connected to the server at {HOST}:{PORT}")
 
 # ========================================
 # AUTH MENU
 # ========================================
-print("\n--- WELCOME TO E2E CHAT ---")
-print("1. Register")
-print("2. Login")
+print("\n[CLIENT] --- WELCOME TO E2E CHAT ---")
+print("[CLIENT] 1. Register")
+print("[CLIENT] 2. Login")
 
 choice = input("Enter your choice (1 or 2): ")
 
@@ -41,7 +49,7 @@ if choice == '1':
     client_socket.sendall(auth_message.encode('utf-8'))
 
     response = client_socket.recv(1024).decode('utf-8')
-    print(f"Server response: {response}")
+    print(f"[CLIENT] Server response: {response}")
 
     client_socket.close()
     sys.exit()
@@ -61,11 +69,15 @@ elif choice == '2':
         session_id = parts[1]
         welcome_message = parts[2]
 
-        print(f"Login successful! {welcome_message}")
-        print(f"[-] Session ID securely stored: {session_id}")
+        print(f"[CLIENT] Login successful: {welcome_message}")
+        print(f"[CLIENT] Session ID securely stored: {session_id}")
+
+        print("\n[CLIENT] Initializing RSA key pair for encryption...")
+        my_private_key, my_public_key = generate_rsa_key_pair()
+        print("[CLIENT] RSA key pair generated successfully")
 
 else:
-    print("Invalid choice. Existing the client")
+    print("[CLIENT] Invalid choice. Exiting the client")
     client_socket.close()
     sys.exit()
 # ========================================
@@ -81,11 +93,11 @@ while True:
     data_to_send = input("")
 
     if data_to_send.lower() == 'exit':
-        print("Exiting the client")
+        print("[CLIENT] Exiting the client")
         break
 
     client_socket.sendall(data_to_send.encode('utf-8'))
-    print(f"Message sent to the server successfully: {data_to_send}")
+    print(f"[CLIENT] Message sent to the server successfully: {data_to_send}")
 
 # Close the client socket
 client_socket.close()
